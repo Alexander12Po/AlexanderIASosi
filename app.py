@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-API_KEY = "AQ.Ab8RN6I3MjUuHdBdohI9mlpQoYuUFQlQwkSxKCkASzJWnSBS9A"
+API_KEY = "GEMINI_API_KEY"
 
 MODEL = "gemini-2.5-flash"
 
