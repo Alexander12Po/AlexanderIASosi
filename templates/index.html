@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gemini AI</title>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    background:#f2f2f2;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    margin:0;
+}
+
+.chat{
+    width:380px;
+    background:#fff;
+    border-radius:12px;
+    box-shadow:0 0 15px rgba(0,0,0,.2);
+    padding:15px;
+}
+
+#respuesta{
+    height:300px;
+    overflow:auto;
+    border:1px solid #ddd;
+    padding:10px;
+    margin-bottom:10px;
+    white-space:pre-wrap;
+}
+
+input{
+    width:75%;
+    padding:10px;
+}
+
+button{
+    padding:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="chat">
+<h2>🤖 Gemini AI</h2>
+
+<div id="respuesta"></div>
+
+<input id="mensaje" placeholder="Escribe tu mensaje...">
+<button onclick="enviar()">Enviar</button>
+
+</div>
+
+<script>
+async function enviar(){
+
+const mensaje=document.getElementById("mensaje").value;
+
+const r=await fetch("/chat",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({mensaje})
+});
+
+const data=await r.json();
+
+document.getElementById("respuesta").innerHTML+="<b>Tú:</b> "+mensaje+"<br><br>";
+document.getElementById("respuesta").innerHTML+="<b>Gemini:</b> "+data.respuesta+"<hr>";
+
+document.getElementById("mensaje").value="";
+}
+</script>
+
+</body>
+</html>
