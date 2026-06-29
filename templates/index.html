@@ -1,81 +1,242 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gemini AI</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini AI</title>
+    <style>
+        /* Estilos generales y fondo oscuro */
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0f172a; /* Fondo azul medianoche */
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #f1f5f9;
+        }
 
-<style>
-body{
-    font-family:Arial,sans-serif;
-    background:#f2f2f2;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
-    margin:0;
-}
+        /* Contenedor principal estilo App */
+        .chat-container {
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            background-color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
 
-.chat{
-    width:380px;
-    background:#fff;
-    border-radius:12px;
-    box-shadow:0 0 15px rgba(0,0,0,.2);
-    padding:15px;
-}
+        /* Ajuste para pantallas más grandes (PC) */
+        @media (min-width: 500px) {
+            .chat-container {
+                height: 90vh;
+                border-radius: 20px;
+                overflow: hidden;
+            }
+        }
 
-#respuesta{
-    height:300px;
-    overflow:auto;
-    border:1px solid #ddd;
-    padding:10px;
-    margin-bottom:10px;
-    white-space:pre-wrap;
-}
+        /* Encabezado */
+        .header {
+            background-color: #0f172a;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #38bdf8; /* Azul brillante */
+            border-bottom: 1px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
 
-input{
-    width:75%;
-    padding:10px;
-}
+        /* Área de los mensajes */
+        #respuesta {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scroll-behavior: smooth;
+        }
 
-button{
-    padding:10px;
-}
-</style>
+        /* Diseño de las burbujas de chat */
+        .msg {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            line-height: 1.5;
+            font-size: 1rem;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Mensaje de Gemini (Izquierda) */
+        .ai-msg {
+            align-self: flex-start;
+            background-color: #334155;
+            color: #f8fafc;
+            border-bottom-left-radius: 4px;
+        }
+
+        /* Mensaje del Usuario (Derecha) */
+        .user-msg {
+            align-self: flex-end;
+            background-color: #2563eb; /* Azul rey */
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* Área para escribir el mensaje */
+        .input-area {
+            padding: 15px;
+            background-color: #0f172a;
+            border-top: 1px solid #334155;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 25px;
+            border: 1px solid #334155;
+            background-color: #1e293b;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        input:focus {
+            border-color: #38bdf8;
+        }
+
+        input::placeholder {
+            color: #94a3b8;
+        }
+
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #1d4ed8;
+        }
+
+        button svg {
+            fill: white;
+            width: 20px;
+            height: 20px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 </head>
 
 <body>
 
-<div class="chat">
-<h2>�� Gemini AI</h2>
+<div class="chat-container">
+    <div class="header">
+        ✨ Gemini AI
+    </div>
 
-<div id="respuesta"></div>
+    <div id="respuesta">
+        <div class="msg ai-msg">
+            ¡Hola! El nuevo diseño ya está listo y conectado a tu servidor. ¿En qué te ayudo hoy?
+        </div>
+    </div>
 
-<input id="mensaje" placeholder="Escribe tu mensaje...">
-<button onclick="enviar()">Enviar</button>
-
+    <div class="input-area">
+        <input id="mensaje" type="text" placeholder="Escribe tu mensaje..." onkeypress="handleEnter(event)">
+        <button onclick="enviar()">
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+        </button>
+    </div>
 </div>
 
 <script>
-async function enviar(){
+    const chatBox = document.getElementById("respuesta");
+    const inputMsg = document.getElementById("mensaje");
 
-const mensaje=document.getElementById("mensaje").value;
+    // Función para crear las burbujas en la pantalla
+    function agregarBurbuja(texto, clase) {
+        const div = document.createElement("div");
+        div.className = "msg " + clase;
+        // Reemplazamos los saltos de línea normales por <br> para que el texto se vea bien
+        div.innerHTML = texto.replace(/\n/g, "<br>");
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight; // Bajar el scroll automáticamente
+    }
 
-const r=await fetch("/chat",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({mensaje})
-});
+    async function enviar() {
+        const mensaje = inputMsg.value.trim();
+        if (mensaje === "") return; // No enviar si está vacío
 
-const data=await r.json();
+        // 1. Mostrar el mensaje del usuario en pantalla
+        agregarBurbuja(mensaje, "user-msg");
+        inputMsg.value = ""; // Limpiar el input
 
-document.getElementById("respuesta").innerHTML+="<b>T繳:</b> "+mensaje+"<br><br>";
-document.getElementById("respuesta").innerHTML+="<b>Gemini:</b> "+data.respuesta+"<hr>";
+        // 2. Mostrar indicador de que está pensando...
+        const pensandoId = "pensando-" + Date.now();
+        const pensandoDiv = document.createElement("div");
+        pensandoDiv.className = "msg ai-msg";
+        pensandoDiv.id = pensandoId;
+        pensandoDiv.innerHTML = "<i>Pensando...</i>";
+        chatBox.appendChild(pensandoDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
 
-document.getElementById("mensaje").value="";
-}
+        try {
+            // 3. ESTA ES TU CONEXIÓN ORIGINAL (¡No se tocó nada lógico aquí!)
+            const r = await fetch("/chat", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ mensaje })
+            });
+
+            const data = await r.json();
+
+            // 4. Borrar el "Pensando..." y mostrar la respuesta real
+            document.getElementById(pensandoId).remove();
+            
+            if (data.respuesta) {
+                agregarBurbuja(data.respuesta, "ai-msg");
+            } else {
+                agregarBurbuja("Lo siento, no recibí respuesta del servidor.", "ai-msg");
+            }
+
+        } catch (error) {
+            document.getElementById(pensandoId).remove();
+            agregarBurbuja("⚠️ Error: No se pudo conectar con el servidor.", "ai-msg");
+        }
+    }
+
+    // Permitir enviar presionando Enter
+    function handleEnter(event) {
+        if (event.key === "Enter") {
+            enviar();
+        }
+    }
 </script>
 
 </body>
