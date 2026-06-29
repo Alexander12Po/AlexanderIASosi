@@ -1,9 +1,11 @@
 from flask import Flask, render_template, request, jsonify
 import requests
+import os
+
 
 app = Flask(__name__)
 
-API_KEY = "GEMINI_API_KEY"
+API_KEY = os.environ.get("GEMINI_API_KEY")
 
 MODEL = "gemini-2.5-flash"
 
