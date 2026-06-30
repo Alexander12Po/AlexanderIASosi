@@ -1,122 +1,127 @@
-<!-- Cambios en el HTML -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOSI Antonio Ocampo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #0f172a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #f1f5f9;
+        }
+
+        .chat {
+            width: 90%;
+            max-width: 400px;
+            background: #1e293b;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            padding: 20px;
+            border: 1px solid #334155;
+        }
+
+        h2 { text-align: center; color: #38bdf8; margin-top: 0; font-size: 1.4rem; }
+
+        #respuesta {
+            height: 350px;
+            overflow-y: auto;
+            border: 1px solid #334155;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            background: #0f172a;
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 5px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: white;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 15px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover { background: #1d4ed8; }
+        b { color: #38bdf8; }
+        hr { border: 0; border-top: 1px solid #334155; margin: 10px 0; }
+    </style>
+</head>
+
+<body>
+
 <div class="chat">
-  <h2>✨ SOSI Antonio Ocampo</h2>
+    <h2>✨ SOSI Antonio Ocampo</h2>
 
-  <!-- area de respuestas: role + aria-live para accesibilidad -->
-  <div id="respuesta" role="log" aria-live="polite"></div>
+    <div id="respuesta"></div>
 
-  <div class="input-group">
-    <!-- label para accesibilidad -->
-    <label for="mensaje" class="sr-only" style="position:absolute;left:-9999px">Mensaje</label>
-    <input id="mensaje" type="text" placeholder="Escribe tu mensaje..." autocomplete="off" />
-    <button id="enviarBtn" type="button">Enviar</button>
-  </div>
+    <div class="input-group">
+        <input id="mensaje" placeholder="Escribe tu mensaje...">
+        <button onclick="enviar()">Enviar</button>
+    </div>
 </div>
 
-<style>
-  /* añadir box-sizing y usar min-height */
-  * { box-sizing: border-box; }
-  #respuesta {
-    min-height: 200px;
-    max-height: 350px;
-    overflow-y: auto;
-    ...
-  }
-  /* .sr-only estilo para pantalla accesible */
-  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-</style>
-
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const mensajeInput = document.getElementById('mensaje');
-  const btn = document.getElementById('enviarBtn');
-  const respDiv = document.getElementById('respuesta');
-
-  // manejar Enter (keydown)
-  mensajeInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      enviar();
-    }
-  });
-
-  btn.addEventListener('click', enviar);
-
-  async function enviar() {
+async function enviar(){
+    const mensajeInput = document.getElementById("mensaje");
     const mensaje = mensajeInput.value.trim();
     if (!mensaje) return;
 
+    const btn = document.querySelector('button');
     btn.disabled = true;
-    const originalBtnText = btn.textContent;
-    btn.textContent = '...';
+    btn.textContent = "...";
 
     try {
-      const r = await fetch('/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mensaje })
-      });
+        const r = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mensaje })
+        });
 
-      if (!r.ok) {
-        // manejo de errores HTTP
-        const text = await r.text();
-        appendLine('Error del servidor: ' + r.status + ' ' + r.statusText + (text ? ' — ' + text : ''));
-      } else {
-        // parseo seguro: si no es JSON, lo tratamos como texto
-        let data;
-        try {
-          data = await r.json();
-        } catch {
-          data = { respuesta: await r.text() };
-        }
-        appendPair('Tú', mensaje);
-        appendPair('SOSI Antonio Ocampo', data.respuesta);
-      }
+        const data = await r.json();
+
+        const respDiv = document.getElementById("respuesta");
+        respDiv.innerHTML += "<b>Tú:</b> " + mensaje + "<br><br>";
+        respDiv.innerHTML += "<b>SOSI Antonio Ocampo:</b> " + data.respuesta + "<hr>";
+        
+        respDiv.scrollTop = respDiv.scrollHeight;
     } catch (error) {
-      appendLine('Error: No se pudo conectar al servidor.');
-      console.error(error);
-    } finally {
-      mensajeInput.value = '';
-      btn.disabled = false;
-      btn.textContent = originalBtnText;
-      respDiv.scrollTop = respDiv.scrollHeight;
-      mensajeInput.focus();
+        document.getElementById("respuesta").innerHTML += "<b>Error:</b> No se pudo conectar al servidor.<hr>";
     }
-  }
 
-  // funciones auxiliares que usan textContent para evitar XSS
-  function appendLine(text) {
-    const p = document.createElement('div');
-    p.textContent = text;
-    p.style.marginBottom = '10px';
-    respDiv.appendChild(p);
-    const hr = document.createElement('hr');
-    hr.style.border = '0';
-    hr.style.borderTop = '1px solid #334155';
-    respDiv.appendChild(hr);
-  }
+    mensajeInput.value = "";
+    btn.disabled = false;
+    btn.textContent = "Enviar";
+}
 
-  function appendPair(author, message) {
-    const authorEl = document.createElement('div');
-    authorEl.innerHTML = '<b>' + escapeHtml(author) + ':</b>';
-    const msgEl = document.createElement('div');
-    msgEl.textContent = message;
-    msgEl.style.marginBottom = '10px';
-    respDiv.appendChild(authorEl);
-    respDiv.appendChild(msgEl);
-    const hr = document.createElement('hr');
-    respDiv.appendChild(hr);
-  }
-
-  // escapado mínimo para autor (si lo necesitas)
-  function escapeHtml(str) {
-    return String(str).replace(/[&<>"']/g, (s) => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    })[s]);
-  }
+document.getElementById("mensaje").addEventListener("keypress", function(event) {
+    if (event.key === "Enter") enviar();
 });
 </script>
+
+</body>
+</html>
