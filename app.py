@@ -3,7 +3,12 @@ import requests
 
 app = Flask(__name__)
 
-API_KEY = "AQ.Ab8RN6IlHAMXvQl5Hwhcg_BqXaS07S-l9a-FDCvB8tn-pTlIeA"
+# Coloca aquí todas tus API Keys
+API_KEYS = [
+    "AQ.Ab8RN6IlHAMXvQl5Hwhcg_BqXaS07S-l9a-FDCvB8tn-pTlIeA",
+    "AQ.Ab8RN6J_ga5dGTx1PJXMlOEEcj6KDFe_IqXaJc-vi_mF1iYOxQ",
+    "AQ.Ab8RN6JkYDB_saQ7RI0hPzYfNI37eXOuxXAZW7HDOViqX7Nb5A"
+]
 
 MODEL = "gemini-2.5-flash"
 
@@ -16,8 +21,6 @@ def index():
 @app.route("/chat", methods=["POST"])
 def chat():
     mensaje = request.json.get("mensaje")
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
 
     prompt = f"""
 Eres SOSI, un asistente de inteligencia artificial experto en programación.
@@ -46,13 +49,29 @@ Mensaje del usuario:
         ]
     }
 
-    r = requests.post(url, json=data)
+    # Probar cada API Key hasta encontrar una que funcione
+    for API_KEY in API_KEYS:
 
-    if r.status_code == 200:
-        respuesta = r.json()["candidates"][0]["content"]["parts"][0]["text"]
-        return jsonify({"respuesta": respuesta})
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={API_KEY}"
 
-    return jsonify({"respuesta": "Error al conectar con Gemini."})
+        try:
+            r = requests.post(url, json=data, timeout=30)
+
+            if r.status_code == 200:
+                respuesta = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+                return jsonify({"respuesta": respuesta})
+
+            # Si la cuota está agotada, probar la siguiente Key
+            if r.status_code == 429:
+                print(f"API agotada: {API_KEY[:12]}...")
+                continue
+
+        except Exception:
+            continue
+
+    return jsonify({
+        "respuesta": "Todas las API Keys alcanzaron su límite de uso."
+    })
 
 
 if __name__ == "__main__":
