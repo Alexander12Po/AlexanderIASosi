@@ -15,49 +15,64 @@ body{background:#0d0d0d;color:#fff;height:100vh}
 .msg{max-width:85%;padding:14px 18px;border-radius:16px;line-height:1.6}
 .user{background:#2d2d2d;align-self:flex-end}
 .bot{background:#202123;align-self:flex-start}
-.footer{display:flex;padding:15px;border-top:1px solid #2a2a2a}
-input{flex:1;padding:14px;border:none;border-radius:14px;background:#2a2a2a;color:#fff}
-button{margin-left:10px;padding:0 20px;border:none;border-radius:14px;background:#10a37f;color:#fff}
+.footer{display:flex;padding:15px;border-top:1px solid #2a2a2a;gap:10px}
+input[type=text]{flex:1;padding:14px;border:none;border-radius:14px;background:#2a2a2a;color:#fff}
+button{padding:0 18px;border:none;border-radius:14px;background:#10a37f;color:#fff;cursor:pointer}
 pre{background:#111827;border:1px solid #333;padding:14px;border-radius:12px;overflow:auto}
-code{font-family:Consolas,monospace}
 .typing{color:#999;font-style:italic}
+#preview{display:none;padding:10px}
+#preview img{max-width:220px;border-radius:12px;border:1px solid #333}
 </style>
 </head>
 <body>
 <div class="chat">
 <div class="header">🤖 SOSI Antonio Ocampo</div>
 <div id="chat"></div>
+<div id="preview"><img id="previewImg"></div>
 <div class="footer">
-<input id="mensaje" placeholder="Enviar un mensaje..." autocomplete="off">
+<input type="file" id="imagen" accept="image/*" hidden>
+<button onclick="document.getElementById('imagen').click()">📷</button>
+<input type="text" id="mensaje" placeholder="Enviar un mensaje..." autocomplete="off">
 <button onclick="enviar()">➤</button>
 </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
 <script>
-marked.setOptions({
-highlight:function(code,lang){
-if(lang && hljs.getLanguage(lang)){return hljs.highlight(code,{language:lang}).value;}
-return hljs.highlightAuto(code).value;
-}
-});
+marked.setOptions({highlight:(c,l)=>l&&hljs.getLanguage(l)?hljs.highlight(c,{language:l}).value:hljs.highlightAuto(c).value});
+const imgInput=document.getElementById("imagen");
+imgInput.onchange=()=>{
+ const f=imgInput.files[0];
+ if(!f)return;
+ const r=new FileReader();
+ r.onload=e=>{
+   preview.style.display="block";
+   previewImg.src=e.target.result;
+ };
+ r.readAsDataURL(f);
+};
 async function enviar(){
-const input=document.getElementById("mensaje");
-const texto=input.value.trim();
-if(!texto)return;
-const chat=document.getElementById("chat");
-chat.innerHTML+=`<div class="msg user">${texto}</div>`;
-input.value="";
-chat.innerHTML+=`<div class="msg bot typing" id="typing">SOSI está escribiendo...</div>`;
-chat.scrollTop=chat.scrollHeight;
-const r=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mensaje:texto})});
-const data=await r.json();
-document.getElementById("typing").remove();
-chat.innerHTML+=`<div class="msg bot">${marked.parse(data.respuesta)}</div>`;
-document.querySelectorAll("pre code").forEach(el=>hljs.highlightElement(el));
-chat.scrollTop=chat.scrollHeight;
+ const texto=mensaje.value.trim();
+ const img=imgInput.files[0];
+ if(!texto && !img)return;
+ const chat=document.getElementById("chat");
+ if(texto) chat.innerHTML+=`<div class="msg user">${texto}</div>`;
+ if(img) chat.innerHTML+=`<div class="msg user"><img src="${URL.createObjectURL(img)}" style="max-width:220px;border-radius:12px"></div>`;
+ chat.innerHTML+=`<div class="msg bot typing" id="typing">SOSI está escribiendo...</div>`;
+ const fd=new FormData();
+ fd.append("mensaje",texto);
+ if(img)fd.append("imagen",img);
+ mensaje.value="";
+ imgInput.value="";
+ preview.style.display="none";
+ const res=await fetch("/chat",{method:"POST",body:fd});
+ const data=await res.json();
+ typing.remove();
+ chat.innerHTML+=`<div class="msg bot">${marked.parse(data.respuesta)}</div>`;
+ document.querySelectorAll("pre code").forEach(e=>hljs.highlightElement(e));
+ chat.scrollTop=chat.scrollHeight;
 }
-document.getElementById("mensaje").addEventListener("keypress",e=>{if(e.key==="Enter")enviar();});
+mensaje.addEventListener("keypress",e=>{if(e.key==="Enter")enviar();});
 </script>
 </body>
 </html>
