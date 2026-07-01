@@ -2,218 +2,62 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SOSI Antonio Ocampo</title>
-
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
 <style>
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:'Inter',sans-serif;
-}
-
-body{
-background:#0d0d0d;
-height:100vh;
-display:flex;
-justify-content:center;
-align-items:center;
-color:white;
-}
-
-.chat{
-width:100%;
-max-width:900px;
-height:100vh;
-display:flex;
-flex-direction:column;
-background:#171717;
-}
-
-.header{
-padding:18px;
-border-bottom:1px solid #2a2a2a;
-font-size:22px;
-font-weight:bold;
-text-align:center;
-}
-
-#chat{
-flex:1;
-overflow-y:auto;
-padding:20px;
-display:flex;
-flex-direction:column;
-gap:18px;
-}
-
-.msg{
-max-width:80%;
-padding:14px 18px;
-border-radius:18px;
-line-height:1.6;
-word-wrap:break-word;
-}
-
-.user{
-background:#2d2d2d;
-align-self:flex-end;
-}
-
-.bot{
-background:#202123;
-align-self:flex-start;
-}
-
-.footer{
-display:flex;
-padding:15px;
-border-top:1px solid #2a2a2a;
-background:#171717;
-}
-
-input{
-flex:1;
-padding:15px;
-border:none;
-outline:none;
-border-radius:15px;
-background:#2a2a2a;
-color:white;
-font-size:16px;
-}
-
-button{
-margin-left:10px;
-padding:15px 25px;
-border:none;
-border-radius:15px;
-background:#10a37f;
-color:white;
-font-size:16px;
-cursor:pointer;
-transition:.3s;
-}
-
-button:hover{
-background:#0d8d6f;
-}
-
-::-webkit-scrollbar{
-width:6px;
-}
-
-::-webkit-scrollbar-thumb{
-background:#444;
-border-radius:20px;
-}
-
-.typing{
-color:#999;
-font-style:italic;
-}
-
+*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,sans-serif}
+body{background:#0d0d0d;color:#fff;height:100vh}
+.chat{height:100vh;display:flex;flex-direction:column;background:#171717}
+.header{padding:18px;border-bottom:1px solid #2a2a2a;text-align:center;font-size:22px;font-weight:700}
+#chat{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.msg{max-width:85%;padding:14px 18px;border-radius:16px;line-height:1.6}
+.user{background:#2d2d2d;align-self:flex-end}
+.bot{background:#202123;align-self:flex-start}
+.footer{display:flex;padding:15px;border-top:1px solid #2a2a2a}
+input{flex:1;padding:14px;border:none;border-radius:14px;background:#2a2a2a;color:#fff}
+button{margin-left:10px;padding:0 20px;border:none;border-radius:14px;background:#10a37f;color:#fff}
+pre{background:#111827;border:1px solid #333;padding:14px;border-radius:12px;overflow:auto}
+code{font-family:Consolas,monospace}
+.typing{color:#999;font-style:italic}
 </style>
-
 </head>
-
 <body>
-
 <div class="chat">
-
-<div class="header">
-🤖 SOSI Antonio Ocampo
-</div>
-
+<div class="header">🤖 SOSI Antonio Ocampo</div>
 <div id="chat"></div>
-
 <div class="footer">
-
-<input
-id="mensaje"
-placeholder="Enviar un mensaje..."
-autocomplete="off">
-
-<button onclick="enviar()">
-➤
-</button>
-
+<input id="mensaje" placeholder="Enviar un mensaje..." autocomplete="off">
+<button onclick="enviar()">➤</button>
 </div>
-
 </div>
-
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
 <script>
-
+marked.setOptions({
+highlight:function(code,lang){
+if(lang && hljs.getLanguage(lang)){return hljs.highlight(code,{language:lang}).value;}
+return hljs.highlightAuto(code).value;
+}
+});
 async function enviar(){
-
-let input=document.getElementById("mensaje");
-
-let texto=input.value.trim();
-
-if(texto=="") return;
-
-let chat=document.getElementById("chat");
-
-chat.innerHTML+=`
-<div class="msg user">
-${texto}
-</div>
-`;
-
+const input=document.getElementById("mensaje");
+const texto=input.value.trim();
+if(!texto)return;
+const chat=document.getElementById("chat");
+chat.innerHTML+=`<div class="msg user">${texto}</div>`;
 input.value="";
-
-chat.innerHTML+=`
-<div class="msg bot typing" id="typing">
-SOSI está escribiendo...
-</div>
-`;
-
+chat.innerHTML+=`<div class="msg bot typing" id="typing">SOSI está escribiendo...</div>`;
 chat.scrollTop=chat.scrollHeight;
-
-const respuesta=await fetch("/chat",{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-mensaje:texto
-})
-
-});
-
-const data=await respuesta.json();
-
+const r=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mensaje:texto})});
+const data=await r.json();
 document.getElementById("typing").remove();
-
-chat.innerHTML+=`
-<div class="msg bot">
-${data.respuesta}
-</div>
-`;
-
+chat.innerHTML+=`<div class="msg bot">${marked.parse(data.respuesta)}</div>`;
+document.querySelectorAll("pre code").forEach(el=>hljs.highlightElement(el));
 chat.scrollTop=chat.scrollHeight;
-
 }
-
-document.getElementById("mensaje").addEventListener("keypress",function(e){
-
-if(e.key==="Enter"){
-
-enviar();
-
-}
-
-});
-
+document.getElementById("mensaje").addEventListener("keypress",e=>{if(e.key==="Enter")enviar();});
 </script>
-
 </body>
 </html>
