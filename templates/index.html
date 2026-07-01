@@ -15,6 +15,8 @@
         .msg { padding: 12px 16px; border-radius: 18px; margin-bottom: 15px; max-width: 85%; font-size: 15px; line-height: 1.5; }
         .user { align-self: flex-end; background: #333; color: white; border-top-right-radius: 4px; }
         .bot { align-self: flex-start; background: #1a1a1a; color: #ececec; border: 1px solid #333; border-top-left-radius: 4px; }
+        
+        /* Estilo para el mensaje de límite */
         .premium { border: 1px solid #ff2d2d; color: #ffbcbc; font-weight: bold; text-align: center; }
 
         #home { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; }
@@ -53,16 +55,15 @@
             const input = document.getElementById("mensaje");
             const texto = input.value.trim();
             const chat = document.getElementById("chat");
-            const home = document.getElementById("home");
-            const header = document.getElementById("header");
-
             if(!texto) return;
 
-            // 1. Verificar si alcanzó el límite ANTES de intentar conectar
+            // 1. Mostrar interfaz de chat
+            document.getElementById("home").style.display = "none";
+            document.getElementById("header").style.display = "flex";
+            chat.style.display = "flex";
+
+            // 2. Control de límite
             if (contadorConsultas >= LIMITE) {
-                home.style.display = "none";
-                header.style.display = "flex";
-                chat.style.display = "flex";
                 chat.innerHTML += `
                     <div class="msg bot premium">
                         Se acabaron tus consultas gratuitas.<br>
@@ -73,21 +74,24 @@
                 return;
             }
 
-            // 2. Proceso normal
-            home.style.display = "none";
-            header.style.display = "flex";
-            chat.style.display = "flex";
             chat.innerHTML += `<div class="msg user">${texto}</div>`;
             input.value = "";
             contadorConsultas++;
 
             try {
-                const res = await fetch("/chat", { method: "POST", body: new FormData().append("mensaje", texto) });
+                const res = await fetch("/chat", { 
+                    method: "POST", 
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: "mensaje=" + encodeURIComponent(texto) 
+                });
+                
+                if (!res.ok) throw new Error("Servidor ocupado");
+                
                 const data = await res.json();
                 chat.innerHTML += `<div class="msg bot">${marked.parse(data.respuesta)}</div>`;
             } catch (e) {
-                // Si falla la conexión por otros motivos, aquí sí mostramos el error
-                chat.innerHTML += `<div class="msg bot">Error al conectar con el servidor. Por favor, intenta de nuevo.</div>`;
+                // Mensaje amigable, NO el error técnico de las API Keys
+                chat.innerHTML += `<div class="msg bot">Estamos optimizando el servicio. Por favor, intenta de nuevo en unos segundos.</div>`;
             }
             chat.scrollTop = chat.scrollHeight;
         }
