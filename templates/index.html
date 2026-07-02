@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -7,99 +7,91 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: #050505; color: #ececec; height: 100dvh; display: flex; flex-direction: column; }
-
-        .header { height: 60px; display: none; align-items: center; padding: 0 15px; border-bottom: 1px solid #222; background: #0a0a0a; color: #fff; font-weight: 600; }
+        .header { height: 60px; display: none; align-items: center; padding: 0 15px; border-bottom: 1px solid #222; background: #0a0a0a; font-weight: 600; }
         .header-logo { width: 30px; height: 30px; border-radius: 50%; margin-right: 12px; object-fit: cover; }
-
         #chat { flex: 1; overflow-y: auto; padding: 20px; display: none; flex-direction: column; }
         .msg { padding: 12px 16px; border-radius: 18px; margin-bottom: 15px; max-width: 85%; font-size: 15px; line-height: 1.5; }
         .user { align-self: flex-end; background: #333; color: white; border-top-right-radius: 4px; }
         .bot { align-self: flex-start; background: #1a1a1a; color: #ececec; border: 1px solid #333; border-top-left-radius: 4px; }
-        
         .premium { border: 1px solid #ff2d2d; color: #ffbcbc; font-weight: bold; text-align: center; }
-
         #home { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; }
         .logo { width: 140px; height: 140px; border-radius: 50%; border: 3px solid #ff2d2d; overflow: hidden; margin-bottom: 20px; }
         .logo img { width: 100%; height: 100%; object-fit: cover; }
-
         .footer { padding: 15px; background: #050505; border-top: 1px solid #222; display: flex; gap: 10px; align-items: center; }
         #mensaje { flex: 1; height: 50px; background: #121212; border: 1px solid #333; border-radius: 25px; padding: 0 20px; color: white; outline: none; }
-        .btn-img { color: #888; font-size: 24px; cursor: pointer; }
         .send-btn { width: 50px; height: 50px; border-radius: 50%; border: none; cursor: pointer; background: #ff2d2d; color: white; }
+        .send-btn:disabled { background: #555; cursor: not-allowed; }
     </style>
 </head>
 <body>
-
     <div class="header" id="header">
         <img src="https://i.postimg.cc/XYHn0q10/original-8e5ab17483c1b360c713dd7ac11dccf7-2.jpg" class="header-logo">
         <span>SOSI Antonio Ocampo</span>
     </div>
-
-    <div id="home">
-        <div class="logo"><img src="https://i.postimg.cc/XYHn0q10/original-8e5ab17483c1b360c713dd7ac11dccf7-2.jpg"></div>
-    </div>
-
+    <div id="home"><div class="logo"><img src="https://i.postimg.cc/XYHn0q10/original-8e5ab17483c1b360c713dd7ac11dccf7-2.jpg"></div></div>
     <div id="chat"></div>
-
     <div class="footer">
-        <label for="file-upload" class="btn-img">📎</label>
-        <input type="file" id="file-upload" style="display:none" accept="image/*">
         <input type="text" id="mensaje" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter') enviar()">
-        <button class="send-btn" onclick="enviar()">➤</button>
+        <button class="send-btn" id="btnEnviar" onclick="enviar()">➤</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
-        let contadorConsultas = 0;
-        const LIMITE = 5; 
+        // Cargar contador desde memoria local para que no se resetee
+        let contador = parseInt(localStorage.getItem('contador')) || 0;
+        const LIMITE = 5;
 
-        // Función para mostrar el mensaje de "Premium"
-        function mostrarAvisoPremium() {
+        function mostrarPremium() {
             const chat = document.getElementById("chat");
-            chat.innerHTML += `
-                <div class="msg bot premium">
-                    Se acabaron tus consultas gratuitas.<br>
-                    Actualiza a Sosi Premium para seguir chateando sin límites.
-                </div>`;
+            chat.innerHTML += `<div class="msg bot premium">Se acabaron tus consultas gratuitas.<br>Actualiza a Sosi Premium para seguir chateando sin límites.</div>`;
             chat.scrollTop = chat.scrollHeight;
         }
 
         async function enviar() {
             const input = document.getElementById("mensaje");
+            const btn = document.getElementById("btnEnviar");
             const texto = input.value.trim();
             const chat = document.getElementById("chat");
-            if(!texto) return;
+
+            if(!texto || btn.disabled) return;
 
             document.getElementById("home").style.display = "none";
             document.getElementById("header").style.display = "flex";
             chat.style.display = "flex";
 
-            // 1. Verificación de límite
-            if (contadorConsultas >= LIMITE) {
-                mostrarAvisoPremium();
+            if (contador >= LIMITE) {
+                mostrarPremium();
                 input.value = "";
                 return;
             }
 
+            // Bloquear botón para evitar saturación
+            btn.disabled = true;
             chat.innerHTML += `<div class="msg user">${texto}</div>`;
             input.value = "";
-            contadorConsultas++;
-                
+            chat.scrollTop = chat.scrollHeight;
+
             try {
                 const res = await fetch("/chat", { 
                     method: "POST", 
-                    body: new URLSearchParams({ mensaje: texto }) 
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: "mensaje=" + encodeURIComponent(texto) 
                 });
-                
-                if (!res.ok) throw new Error("Error");
+
+                if (!res.ok) throw new Error("Error servidor");
                 
                 const data = await res.json();
                 chat.innerHTML += `<div class="msg bot">${marked.parse(data.respuesta)}</div>`;
+                
+                // Solo sumar contador si la respuesta fue exitosa
+                contador++;
+                localStorage.setItem('contador', contador);
             } catch (e) {
-                // 2. Si falla la conexión, mostramos el aviso Premium[span_1](start_span)[span_1](end_span)
-                mostrarAvisoPremium();
+                chat.innerHTML += `<div class="msg bot">Estamos optimizando, intenta de nuevo en un momento.</div>`;
+            } finally {
+                btn.disabled = false;
+                chat.scrollTop = chat.scrollHeight;
             }
-            chat.scrollTop = chat.scrollHeight;
         }
     </script>
 </body>
