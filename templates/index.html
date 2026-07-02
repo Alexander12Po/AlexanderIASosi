@@ -16,7 +16,6 @@
         .user { align-self: flex-end; background: #333; color: white; border-top-right-radius: 4px; }
         .bot { align-self: flex-start; background: #1a1a1a; color: #ececec; border: 1px solid #333; border-top-left-radius: 4px; }
         
-        /* Estilo para el mensaje de límite */
         .premium { border: 1px solid #ff2d2d; color: #ffbcbc; font-weight: bold; text-align: center; }
 
         #home { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; }
@@ -25,6 +24,7 @@
 
         .footer { padding: 15px; background: #050505; border-top: 1px solid #222; display: flex; gap: 10px; align-items: center; }
         #mensaje { flex: 1; height: 50px; background: #121212; border: 1px solid #333; border-radius: 25px; padding: 0 20px; color: white; outline: none; }
+        .btn-img { color: #888; font-size: 24px; cursor: pointer; }
         .send-btn { width: 50px; height: 50px; border-radius: 50%; border: none; cursor: pointer; background: #ff2d2d; color: white; }
     </style>
 </head>
@@ -42,6 +42,8 @@
     <div id="chat"></div>
 
     <div class="footer">
+        <label for="file-upload" class="btn-img">📎</label>
+        <input type="file" id="file-upload" style="display:none" accept="image/*">
         <input type="text" id="mensaje" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter') enviar()">
         <button class="send-btn" onclick="enviar()">➤</button>
     </div>
@@ -51,25 +53,30 @@
         let contadorConsultas = 0;
         const LIMITE = 5; 
 
+        // Función para mostrar el mensaje de "Premium"
+        function mostrarAvisoPremium() {
+            const chat = document.getElementById("chat");
+            chat.innerHTML += `
+                <div class="msg bot premium">
+                    Se acabaron tus consultas gratuitas.<br>
+                    Actualiza a Sosi Premium para seguir chateando sin límites.
+                </div>`;
+            chat.scrollTop = chat.scrollHeight;
+        }
+
         async function enviar() {
             const input = document.getElementById("mensaje");
             const texto = input.value.trim();
             const chat = document.getElementById("chat");
             if(!texto) return;
 
-            // 1. Mostrar interfaz de chat
             document.getElementById("home").style.display = "none";
             document.getElementById("header").style.display = "flex";
             chat.style.display = "flex";
 
-            // 2. Control de límite
+            // 1. Verificación de límite
             if (contadorConsultas >= LIMITE) {
-                chat.innerHTML += `
-                    <div class="msg bot premium">
-                        Se acabaron tus consultas gratuitas.<br>
-                        Actualiza a Sosi Premium para seguir chateando sin límites.
-                    </div>`;
-                chat.scrollTop = chat.scrollHeight;
+                mostrarAvisoPremium();
                 input.value = "";
                 return;
             }
@@ -77,21 +84,20 @@
             chat.innerHTML += `<div class="msg user">${texto}</div>`;
             input.value = "";
             contadorConsultas++;
-
+                
             try {
                 const res = await fetch("/chat", { 
                     method: "POST", 
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: "mensaje=" + encodeURIComponent(texto) 
+                    body: new URLSearchParams({ mensaje: texto }) 
                 });
                 
-                if (!res.ok) throw new Error("Servidor ocupado");
+                if (!res.ok) throw new Error("Error");
                 
                 const data = await res.json();
                 chat.innerHTML += `<div class="msg bot">${marked.parse(data.respuesta)}</div>`;
             } catch (e) {
-                // Mensaje amigable, NO el error técnico de las API Keys
-                chat.innerHTML += `<div class="msg bot">Estamos optimizando el servicio. Por favor, intenta de nuevo en unos segundos.</div>`;
+                // 2. Si falla la conexión, mostramos el aviso Premium[span_1](start_span)[span_1](end_span)
+                mostrarAvisoPremium();
             }
             chat.scrollTop = chat.scrollHeight;
         }
